@@ -1,5 +1,6 @@
 const net = require('net');
 const DnsClient = require('../dns/Client');
+const DnsCache = require('../dns/Cache');
 
 const UserAgent = 'RIWEB_CRAWLER';
 
@@ -22,11 +23,21 @@ module.exports = exports = class HttpClient {
    */
   get() {
     return new Promise(async(resolve, reject) => {
-      const addresses = await (new DnsClient(this.host, true)
-        .getAddresses());
+      let address = null;
 
-      if (!addresses[0]) {
-        return reject(`No IP addresses have been found for name ${this.host}`);
+      const cachedAddress = DnsCache.get(this.host);
+      if (cachedAddress !== null) {
+        address = cachedAddress;
+      } else {
+        const dnsResponse = await (new DnsClient(this.host, true)
+          .getAddresses());
+
+        if (!dnsResponse[0]) {
+          return reject(`No IP addresses have been found for name ${this.host}`);
+        }
+
+        DnsCache.put(this.host, dnsResponse[0].value, dnsResponse[0].timestamp, dnsResponse[0].ttl);
+        address = dnsResponse[0].value;
       }
 
       let data = '';
@@ -51,7 +62,7 @@ module.exports = exports = class HttpClient {
         return resolve(parseResponse(data));
       });
 
-      this.socket.connect(80, `${addresses[0]}`);
+      this.socket.connect(80, `${address}`);
     });
   }
 

@@ -37,6 +37,7 @@ module.exports = exports = class Client {
     this.socket = this.createSocket();
 
     // Initialize comunication
+    this.timestamp = Date.now();
     this.socket.send(
       this.createQuestion(),
       this.port,
@@ -338,6 +339,6 @@ function getIpAddressesFromResponse(response) {
       return answer.type === 1 || answer.type === 28;
     })
     .map((answer) => {
-      return answer.address;
+      return { value: answer.address, ttl: answer.ttl, timestamp: this.timestamp };
     });
 }
