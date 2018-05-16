@@ -1,16 +1,15 @@
 const net = require('net');
+const DnsClient = require('../dns/Client');
 
 const UserAgent = 'RIWEB_CRAWLER';
 
 module.exports = exports = class HttpClient {
   /**
-   *
-   * @param {string} address
    * @param {string} host
    * @param {string} route
    */
-  constructor(address, host, route) {
-    this.address = address;
+  constructor(host, route) {
+    this.address = '';
     this.host = host;
     this.route = route;
 
@@ -22,7 +21,14 @@ module.exports = exports = class HttpClient {
    * @returns {Promise}
    */
   get() {
-    return new Promise((resolve, reject) => {
+    return new Promise(async(resolve, reject) => {
+      const addresses = await (new DnsClient(this.host, true)
+        .getAddresses());
+
+      if (!addresses[0]) {
+        return reject(`No IP addresses have been found for name ${this.host}`);
+      }
+
       let data = '';
 
       this.socket.once('connect', () => {
@@ -45,7 +51,7 @@ module.exports = exports = class HttpClient {
         return resolve(parseResponse(data));
       });
 
-      this.socket.connect(80, `${this.address}`);
+      this.socket.connect(80, `${addresses[0]}`);
     });
   }
 

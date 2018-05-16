@@ -4,5 +4,8 @@
   "author": {
     "name": "Muraru Ștefan",
     "email": "muraru.stefaan@gmail.com"
+  },
+  "dependencies": {
+    "robots-parser": "^2.1.0"
   }
 }
