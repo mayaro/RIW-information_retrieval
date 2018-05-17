@@ -2,17 +2,17 @@ const net = require('net');
 const DnsClient = require('../dns/Client');
 const DnsCache = require('../dns/Cache');
 
-const UserAgent = 'RIWEB_CRAWLER';
-
 module.exports = exports = class HttpClient {
   /**
    * @param {string} host
    * @param {string} route
+   * @param {string} userAgent
    */
-  constructor(host, route) {
+  constructor(host, route, userAgent) {
     this.address = '';
     this.host = host;
     this.route = route;
+    this.userAgent = userAgent;
 
     // Comunication related variables
     this.socket = new net.Socket();
@@ -27,6 +27,7 @@ module.exports = exports = class HttpClient {
 
       const cachedAddress = DnsCache.get(this.host);
       if (cachedAddress !== null) {
+        console.log('Using cached address');
         address = cachedAddress;
       } else {
         const dnsResponse = await (new DnsClient(this.host, true)
@@ -75,7 +76,7 @@ module.exports = exports = class HttpClient {
       `GET ${this.route} HTTP/1.1\r\n` +
       `Host: ${this.host}\r\n` +
       'Connection: close\r\n' +
-      `User-Agent: ${UserAgent}\r\n` +
+      `User-Agent: ${this.userAgent}\r\n` +
       '\r\n';
 
     return request;

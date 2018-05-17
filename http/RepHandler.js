@@ -3,8 +3,6 @@ const Robots = require('robots-parser');
 
 let _instance = null;
 
-const UserAgent = 'RIWEB_CRAWLER';
-
 module.exports = exports = class RepHandler {
   /**
    * Singleton class used for chacking whether crawling a endpoint is allowed for the given UserAgent.
@@ -30,8 +28,10 @@ module.exports = exports = class RepHandler {
    */
   async isEndpointAllowed(host, route) {
     if (this.domains[host]) {
+      console.log('Using cached REP rules');
+
       return Boolean(
-        this.domains[host].isAllowed(`http://${host}${route}`, UserAgent)
+        this.domains[host].isAllowed(`http://${host}${route}`, this.userAgent)
       );
     }
 
@@ -43,8 +43,9 @@ module.exports = exports = class RepHandler {
 
       if (response.header && parseInt(response.header.statusCode, 10) === 200 && response.body) {
         this.domains[host] = Robots(`http://${host}/robots.txt`, response.body);
+        console.log('Using requested REP rules');
 
-        return this.domains[host].isAllowed(`http://${host}${route}`, UserAgent);
+        return this.domains[host].isAllowed(`http://${host}${route}`, this.userAgent);
       }
     } catch (e) {
       console.error(e);
