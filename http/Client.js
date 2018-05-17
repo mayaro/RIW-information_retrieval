@@ -25,45 +25,49 @@ module.exports = exports = class HttpClient {
     return new Promise(async(resolve, reject) => {
       let address = null;
 
-      const cachedAddress = DnsCache.get(this.host);
-      if (cachedAddress !== null) {
-        console.log('Using cached address');
-        address = cachedAddress;
-      } else {
-        const dnsResponse = await (new DnsClient(this.host, true)
-          .getAddresses());
+      try {
+        const cachedAddress = DnsCache.get(this.host);
+        if (cachedAddress !== null) {
+          console.log('Using cached address');
+          address = cachedAddress;
+        } else {
+          const dnsResponse = await (new DnsClient(this.host, true)
+            .getAddresses());
 
-        if (!dnsResponse[0]) {
-          return reject(`No IP addresses have been found for name ${this.host}`);
+          if (!dnsResponse[0]) {
+            return reject(`No IP addresses have been found for name ${this.host}`);
+          }
+
+          DnsCache.put(this.host, dnsResponse[0].value, dnsResponse[0].timestamp, dnsResponse[0].ttl);
+          address = dnsResponse[0].value;
         }
 
-        DnsCache.put(this.host, dnsResponse[0].value, dnsResponse[0].timestamp, dnsResponse[0].ttl);
-        address = dnsResponse[0].value;
+        let data = '';
+
+        this.socket.once('connect', () => {
+          this.socket.write(this.createRequest());
+        });
+
+        this.socket.once('error', (err) => {
+          console.error(err);
+
+          return reject(err.message);
+        });
+
+        this.socket.on('data', (message, info) => {
+          data = data + message;
+        });
+
+        this.socket.once('end', () => {
+          this.socket.destroy();
+
+          return resolve(parseResponse(data));
+        });
+
+        this.socket.connect(80, `${address}`);
+      } catch (e) {
+        return reject(e);
       }
-
-      let data = '';
-
-      this.socket.once('connect', () => {
-        this.socket.write(this.createRequest());
-      });
-
-      this.socket.once('error', (err) => {
-        console.error(err);
-
-        return reject(err.message);
-      });
-
-      this.socket.on('data', (message, info) => {
-        data = data + message;
-      });
-
-      this.socket.once('end', () => {
-        this.socket.destroy();
-
-        return resolve(parseResponse(data));
-      });
-
-      this.socket.connect(80, `${address}`);
     });
   }
 

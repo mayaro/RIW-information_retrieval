@@ -1,3 +1,5 @@
+const { splitUrl } = require('./http/Parser');
+
 const { fork } = require('child_process');
 const os = require('os');
 
@@ -42,29 +44,35 @@ for (let i = 0; i < cpus; ++i) {
  */
 function handleWorkerMessage(message, handle) {
   this.available = true;
+  let { success, links, redirect, host, route } = message;
 
-  if (!visited[message.host]) {
-    visited[message.host] = new Set();
+  if (!visited[host]) {
+    visited[host] = new Set();
   }
-  visited[message.host].add(message.route);
+  visited[host].add(route);
 
-  const { success, links } = message;
+  if (redirect) {
+    queue[redirect.host] = queue[host];
+    queue[host] = undefined;
+    host = redirect.host;
+  }
+
   if (success === true && links instanceof Array) {
     links.forEach((link) => {
-      const { host, route } = splitUrl(link);
+      const { linkHost, route } = splitUrl(link);
 
-      if (!queue[host]) {
-        queue[host] = {
+      if (!queue[linkHost]) {
+        queue[linkHost] = {
           routes: new Set(),
           connectionAt: 0,
         };
       }
 
-      if (visited[host] && visited[host].has(route)) {
+      if (visited[linkHost] && visited[linkHost].has(route)) {
         return null;
       }
 
-      return queue[host].routes.add(route);
+      return queue[linkHost].routes.add(route);
     });
   }
 
@@ -154,19 +162,5 @@ function initializeWorkQueue() {
       routes: new Set([ '/' ]),
       connectionAt: 0,
     },
-  };
-}
-
-/**
- * Get the hostand the route from a URL.
- * @param {string} url
- * @returns {{host: string, route: string}}
- */
-function splitUrl(url) {
-  const splitted = url.split('/');
-
-  return {
-    host: splitted.slice(2, 3)[0],
-    route: `/${splitted.slice(3).join('/')}`,
   };
 }
