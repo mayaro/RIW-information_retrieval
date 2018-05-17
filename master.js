@@ -43,6 +43,11 @@ for (let i = 0; i < cpus; ++i) {
 function handleWorkerMessage(message, handle) {
   this.available = true;
 
+  if (!visited[message.host]) {
+    visited[message.host] = new Set();
+  }
+  visited[message.host].add(message.route);
+
   const { success, links } = message;
   if (success === true && links instanceof Array) {
     links.forEach((link) => {
@@ -53,6 +58,10 @@ function handleWorkerMessage(message, handle) {
           routes: new Set(),
           connectionAt: 0,
         };
+      }
+
+      if (visited[host] && visited[host].has(route)) {
+        return null;
       }
 
       return queue[host].routes.add(route);

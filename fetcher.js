@@ -2,7 +2,7 @@ const HttpClient = require('./http/Client');
 const RepHandler = require('./http/RepHandler');
 const cheerio = require('cheerio');
 
-const UserAgent = 'RIWEB_CRAWLER2';
+const UserAgent = 'RIWEB_CRAWLER';
 
 process.on('message', async(message) => {
   let start = Date.now();
