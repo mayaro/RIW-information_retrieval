@@ -12,8 +12,6 @@ const queue = initializeWorkQueue();
 
 let prevTime = 0;
 
-const firstWorkItem = getWorkItem();
-
 // Initialize workers
 for (let i = 0; i < cpus; ++i) {
   const worker = fork('fetcher.js', [], {
@@ -24,8 +22,9 @@ for (let i = 0; i < cpus; ++i) {
     return handleWorkerMessage.call(worker, message, handle);
   });
 
-  if (i === 0) {
-    worker.send(firstWorkItem);
+  const workItem = getWorkItem();
+  if (workItem !== null) {
+    worker.send(workItem);
   }
 
   // Set new property "available" on worker once it has nothing to do
@@ -53,7 +52,7 @@ function handleWorkerMessage(message, handle) {
 
   if (redirect) {
     queue[redirect.host] = queue[host];
-    queue[host] = undefined;
+    delete queue[host];
     host = redirect.host;
   }
 
@@ -70,7 +69,7 @@ function handleWorkerMessage(message, handle) {
 
       const newRoute = queue[linkHost].prefix ? queue[linkHost].prefix + route : route;
       if ((visited[linkHost] && visited[linkHost].has(newRoute)) ||
-        queue[linkHost].routes.size >= 100) {
+        queue[linkHost].routes.size >= 1000) {
         return null;
       }
 
@@ -161,6 +160,26 @@ function initializeWorkQueue() {
   return {
     'riweb.tibeica.com': {
       prefix: '/crawl',
+      routes: new Set([ '/' ]),
+      connectionAt: 0,
+    },
+    'www.ziare.com': {
+      prefix: undefined,
+      routes: new Set([ '/' ]),
+      connectionAt: 0,
+    },
+    'adevarul.ro': {
+      prefix: undefined,
+      routes: new Set([ '/' ]),
+      connectionAt: 0,
+    },
+    'www.tion.ro': {
+      prefix: undefined,
+      routes: new Set([ '/' ]),
+      connectionAt: 0,
+    },
+    'www.gsp.ro': {
+      prefix: undefined,
       routes: new Set([ '/' ]),
       connectionAt: 0,
     },
