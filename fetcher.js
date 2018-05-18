@@ -1,9 +1,12 @@
 const HttpClient = require('./http/Client');
 const RepHandler = require('./http/RepHandler');
 const { splitUrl } = require('./http/Parser');
+const shell = require('shelljs');
 const cheerio = require('cheerio');
+const fs = require('fs');
 
 const UserAgent = 'RIWEB_CRAWLER';
+const savePath = 'X:\\Facultate\\RIW-Crawl';
 
 process.on('message', async(message) => {
   let start = Date.now();
@@ -48,6 +51,8 @@ process.on('message', async(message) => {
 
     const now = Date.now();
     console.log(message.host, message.route, now - start, afterRequest - start, now - afterRequest);
+
+    saveFile(`${message.host}${message.route}`, textContent);
 
     process.send({ host: message.host, route: message.route, success: true, links: links, redirect: permanentRedirect });
   } catch (e) {
@@ -122,7 +127,7 @@ function extract(content, baseUrl) {
 
   anchorElements = anchorElements
     .filter((idx, el) => {
-      return $(el).prop('href') && $(el).prop('href')[0] !== '#' && idx < 100;
+      return $(el).prop('href') && $(el).prop('href')[0] !== '#' && idx < 2000;
     });
 
   const links = [].slice.call(anchorElements.map((acc, anchorElement) => {
@@ -160,4 +165,34 @@ function extract(content, baseUrl) {
     textContent: textContent,
     links: links,
   };
+}
+
+/**
+ * Save a file to the disk
+ * @param {string} url
+ * @param {string} contents
+ */
+function saveFile(url, contents) {
+  let filePath = url;
+  let containsHttpPrefix = filePath.indexOf('http://');
+
+  if (containsHttpPrefix === 0) {
+    filePath = filePath.slice(7);
+  }
+
+  const split = filePath.split('/');
+  if (split[split.length - 1] === '') {
+    filePath = `${filePath }index.html`;
+  }
+
+  filePath = `${savePath}/${filePath}`;
+
+  try {
+    shell.mkdir('-p',
+      filePath.split('/').slice(0, -1).join('/'));
+
+    fs.writeFileSync(filePath, contents);
+  } catch (ex) {
+    console.warn(ex.message);
+  }
 }
