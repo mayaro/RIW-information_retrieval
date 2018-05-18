@@ -91,6 +91,13 @@ async function tryRequest(host, route) {
 function createRedirectUrl(receivedLocation, host, route) {
   let newLocation = '';
 
+  if (receivedLocation === 'http') {
+    return {
+      host: host,
+      route: `${route}/`,
+    };
+  }
+
   if (receivedLocation.startsWith('http')) {
     return splitUrl(receivedLocation);
   }
@@ -120,6 +127,14 @@ function extract(content, baseUrl) {
 
   const links = [].slice.call(anchorElements.map((acc, anchorElement) => {
     const link = $(anchorElement).prop('href');
+
+    // Check for non-html links (ex. Apache.org has .tag.gz and .md5)
+    const linkComponents = link.split('/');
+    const lastComponent = linkComponents[linkComponents.length - 1];
+    if (!lastComponent.endsWith('.html') && lastComponent.split('.').length) {
+      return undefined;
+    }
+
     const foundUrl = new URL(link, baseUrl);
     foundUrl.hash = '';
 

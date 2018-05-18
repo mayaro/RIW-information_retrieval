@@ -3,8 +3,8 @@ const { splitUrl } = require('./http/Parser');
 const { fork } = require('child_process');
 const os = require('os');
 
-// const cpus = os.cpus().length - 1;
-const cpus = 1;
+const cpus = os.cpus().length - 1;
+// const cpus = 1;
 
 const workers = [];
 const visited = {};
@@ -97,7 +97,7 @@ function assignWorkerJobs() {
 
     worker.available = false;
 
-    console.log(Date.now() - prevTime);
+    // console.log(Date.now() - prevTime);
     prevTime = Date.now();
     worker.send(workItem);
   }

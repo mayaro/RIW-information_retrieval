@@ -28,7 +28,7 @@ module.exports = exports = class HttpClient {
       try {
         const cachedAddress = DnsCache.get(this.host);
         if (cachedAddress !== null) {
-          console.log('Using cached address');
+          // console.log('Using cached address');
           address = cachedAddress;
         } else {
           const dnsResponse = await (new DnsClient(this.host, true)

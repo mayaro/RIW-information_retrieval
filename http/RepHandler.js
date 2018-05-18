@@ -28,7 +28,7 @@ module.exports = exports = class RepHandler {
    */
   async isEndpointAllowed(host, route) {
     if (this.domains[host]) {
-      console.log('Using cached REP rules');
+      // console.log('Using cached REP rules');
 
       return Boolean(
         this.domains[host].isAllowed(`http://${host}${route}`, this.userAgent)
