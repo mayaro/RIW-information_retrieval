@@ -122,7 +122,7 @@ function extract(content, baseUrl) {
 
   anchorElements = anchorElements
     .filter((idx, el) => {
-      return $(el).prop('href') && $(el).prop('href')[0] !== '#';
+      return $(el).prop('href') && $(el).prop('href')[0] !== '#' && idx < 100;
     });
 
   const links = [].slice.call(anchorElements.map((acc, anchorElement) => {

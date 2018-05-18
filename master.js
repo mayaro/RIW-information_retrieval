@@ -57,7 +57,7 @@ function handleWorkerMessage(message, handle) {
     host = redirect.host;
   }
 
-  if (success === true && links instanceof Array) {
+  if (Object.keys(queue).length < 1000 && success === true && links instanceof Array) {
     links.forEach((link) => {
       const { linkHost, route } = splitUrl(link);
 
@@ -68,7 +68,9 @@ function handleWorkerMessage(message, handle) {
         };
       }
 
-      if (visited[linkHost] && visited[linkHost].has(route)) {
+      const newRoute = queue[linkHost].prefix ? queue[linkHost].prefix + route : route;
+      if ((visited[linkHost] && visited[linkHost].has(newRoute)) ||
+        queue[linkHost].routes.size >= 100) {
         return null;
       }
 
