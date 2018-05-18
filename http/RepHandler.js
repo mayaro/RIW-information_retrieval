@@ -30,6 +30,10 @@ module.exports = exports = class RepHandler {
     if (this.domains[host]) {
       // console.log('Using cached REP rules');
 
+      if (typeof this.domains[host] === 'boolean') {
+        return this.domains[host];
+      }
+
       return Boolean(
         this.domains[host].isAllowed(`http://${host}${route}`, this.userAgent)
       );
@@ -49,6 +53,8 @@ module.exports = exports = class RepHandler {
       }
     } catch (e) {
       console.error(e);
+      this.domains[host] = true;
+
       return true;
     }
 
