@@ -36,7 +36,7 @@ module.exports = exports = {
             const linkComponents = href.split('/');
             const lastComponent = linkComponents[linkComponents.length - 1];
 
-            if (!lastComponent.endsWith('.html') && lastComponent.split('.').length) {
+            if (!lastComponent.endsWith('.html') && lastComponent.split('.').length > 1) {
               return;
             }
 
@@ -66,6 +66,10 @@ module.exports = exports = {
         },
 
         onend: () => {
+          if (noindex === true || nofollow === true) {
+            console.log(noindex, nofollow);
+          }
+
           return resolve({
             links: nofollow === false ? links : [],
             text: noindex === false ? text : null,
