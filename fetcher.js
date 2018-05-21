@@ -19,7 +19,7 @@ process.on('message', async(message) => {
     console.log(process.pid, message.host, message.route, header.statusCode);
 
     let permanentRedirect = undefined;
-    if (header.statusCode === '301' || header.statusCode === '302') {
+    if (header.location !== 'http' && (header.statusCode === '301' || header.statusCode === '302')) {
       if (header.location.startsWith('https')) {
         throw new Error('Protocol https not supported');
       }
@@ -28,7 +28,7 @@ process.on('message', async(message) => {
 
       const { header: redirect_header, body: redirect_body } = await tryRequest(redirect_host, redirect_route);
 
-      if (!redirect_header.statusCode.startsWith('2')) {
+      if (!redirect_header.statusCode.startsWith('2') || !redirect_header.statusCode.startsWith('3')) {
         throw new Error('Redirect was not successfull');
       }
 
@@ -50,13 +50,12 @@ process.on('message', async(message) => {
     const { textContent, links } = extract(body, `http://${message.host}`);
 
     const now = Date.now();
-    console.log(message.host, message.route, now - start, afterRequest - start, now - afterRequest);
+    // console.log(message.host, message.route, now - start, afterRequest - start, now - afterRequest);
 
     saveFile(`${message.host}${message.route}`, textContent);
 
     process.send({ host: message.host, route: message.route, success: true, links: links, redirect: permanentRedirect });
   } catch (e) {
-    console.error(e.message);
     process.send({ host: message.host, route: message.route, success: false });
   }
 });
@@ -127,7 +126,7 @@ function extract(content, baseUrl) {
 
   anchorElements = anchorElements
     .filter((idx, el) => {
-      return $(el).prop('href') && $(el).prop('href')[0] !== '#' && idx < 2000;
+      return $(el).prop('href') && $(el).prop('href')[0] !== '#';
     });
 
   const links = [].slice.call(anchorElements.map((acc, anchorElement) => {
@@ -191,7 +190,7 @@ function saveFile(url, contents) {
     shell.mkdir('-p',
       filePath.split('/').slice(0, -1).join('/'));
 
-    fs.writeFileSync(filePath, contents);
+    fs.writeFile(filePath, contents, () => {});
   } catch (ex) {
     console.warn(ex.message);
   }

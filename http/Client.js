@@ -26,6 +26,11 @@ module.exports = exports = class HttpClient {
       let address = null;
 
       try {
+        setTimeout(() => {
+          this.socket.destroy();
+          return reject('Timeout');
+        }, 2000);
+
         const cachedAddress = DnsCache.get(this.host);
         if (cachedAddress !== null) {
           // console.log('Using cached address');
@@ -49,7 +54,7 @@ module.exports = exports = class HttpClient {
         });
 
         this.socket.once('error', (err) => {
-          console.error(err);
+          this.socket.destroy();
 
           return reject(err.message);
         });
