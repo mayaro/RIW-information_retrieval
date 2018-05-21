@@ -1,4 +1,12 @@
-const DnsCache = {};
+const fs = require('fs');
+
+let DnsCache = null;
+try {
+  DnsCache = require('../cache.json');
+}
+catch (e) {
+  DnsCache = {};
+}
 
 module.exports = exports = {
   /**
@@ -14,6 +22,9 @@ module.exports = exports = {
     }
 
     if (entry.timestamp + entry.ttl < Date.now()) {
+      console.error('DNS time expired for name ', hostname);
+
+      delete DnsCache[hostname.toLowerCase()];
       return null;
     }
 
@@ -33,5 +44,7 @@ module.exports = exports = {
       timestamp: timestamp,
       ttl: ttl,
     };
+
+    fs.writeFile('./cache.json', JSON.stringify(DnsCache, null, 4), () => {});
   },
 };
