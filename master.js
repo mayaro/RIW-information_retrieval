@@ -94,7 +94,7 @@ function handleWorkerMessage(message, handle) {
 function assignWorkerJobs(fromTimeout) {
   let job = null;
 
-  if (!workers.every((w) => w.activePages < 3)) {
+  if (!workers.every((w) => w.activePages < 5)) {
     return;
   }
 
@@ -102,12 +102,12 @@ function assignWorkerJobs(fromTimeout) {
     workItemRequested = false;
   }
 
-  const sortedWorkers = workers.sort((w1, w2) => w1.activePages < w2.activePages);
+  const sortedWorkers = workers.sort((w1, w2) => w1.activePages - w2.activePages);
 
   for (let idx = 0; idx < sortedWorkers.length; idx++) {
     let worker = sortedWorkers[idx];
 
-    if (worker.activePages >= 5) {
+    if (worker.activePages >= 10) {
       continue;
     }
 
@@ -124,7 +124,7 @@ function assignWorkerJobs(fromTimeout) {
     worker.send(job);
 
     if (idx === sortedWorkers.length - 1 && sortedWorkers.some((w) => {
-      return w.activePages < 5;
+      return w.activePages < 10;
     })) {
       idx = -1;
     }
