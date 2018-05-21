@@ -1,8 +1,8 @@
 const HttpClient = require('./http/Client');
 const RepHandler = require('./http/RepHandler');
 const { splitUrl } = require('./http/Parser');
+const { extract } = require('./http/Parser');
 const shell = require('shelljs');
-const cheerio = require('cheerio');
 const fs = require('fs');
 
 const UserAgent = 'RIWEB_CRAWLER';
@@ -47,12 +47,12 @@ process.on('message', async(message) => {
       throw new Error(`Not successful status code ${header.statusCode}`);
     }
 
-    const { textContent, links } = extract(body, `http://${message.host}`);
+    const { text, links } = await extract(body, `http://${message.host}`);
 
     const now = Date.now();
     // console.log(message.host, message.route, now - start, afterRequest - start, now - afterRequest);
 
-    saveFile(`${message.host}${message.route}`, textContent);
+    saveFile(`${message.host}${message.route}`, text);
 
     process.send({ host: message.host, route: message.route, success: true, links: links, redirect: permanentRedirect });
   } catch (e) {
@@ -113,65 +113,15 @@ function createRedirectUrl(receivedLocation, host, route) {
 }
 
 /**
- * Parse the body of a received document.
- * @param {string} content
- * @param {string} baseUrl
- * @returns {{textContent: string, links: string[]}}
- */
-function extract(content, baseUrl) {
-  const $ = cheerio.load(content);
-
-  $('script, noscript, style').remove();
-  let anchorElements = $('a');
-
-  anchorElements = anchorElements
-    .filter((idx, el) => {
-      return $(el).prop('href') && $(el).prop('href')[0] !== '#';
-    });
-
-  const links = [].slice.call(anchorElements.map((acc, anchorElement) => {
-    const link = $(anchorElement).prop('href');
-
-    // Check for non-html links (ex. Apache.org has .tag.gz and .md5)
-    const linkComponents = link.split('/');
-    const lastComponent = linkComponents[linkComponents.length - 1];
-    if (!lastComponent.endsWith('.html') && lastComponent.split('.').length) {
-      return undefined;
-    }
-
-    const foundUrl = new URL(link, baseUrl);
-    foundUrl.hash = '';
-
-    return foundUrl.toString();
-  }));
-
-  let textElements = $('body, body *');
-
-  const textContent = [].slice.call(
-    textElements
-      .filter((idx, el) => {
-        return $(el).text();
-      }))
-    .reduce((accum, el) => {
-      return `${accum + $(el)
-        .text()
-        .trim()
-        .replace(/\r?\n/g, ' ')
-        .replace(/\s+/g, ' ') } `;
-    }, '');
-
-  return {
-    textContent: textContent,
-    links: links,
-  };
-}
-
-/**
  * Save a file to the disk
  * @param {string} url
  * @param {string} contents
  */
 function saveFile(url, contents) {
+  if (contents === null) {
+    return;
+  }
+
   let filePath = url;
   let containsHttpPrefix = filePath.indexOf('http://');
 
