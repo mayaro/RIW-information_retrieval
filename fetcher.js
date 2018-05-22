@@ -16,34 +16,9 @@ process.on('message', async(message) => {
     let { header, body } = await tryRequest(message.host, message.route);
     afterRequest = Date.now();
 
-    console.log(process.pid, message.host, message.route, header.statusCode);
+    // console.log(process.pid, message.host, message.route, header.statusCode);
 
-    let permanentRedirect = undefined;
-    if (header.location !== 'http' && (header.statusCode === '301' || header.statusCode === '302')) {
-      if (header.location.startsWith('https')) {
-        throw new Error('Protocol https not supported');
-      }
-
-      const { host: redirect_host, route: redirect_route } = createRedirectUrl(header.location, message.host, message.route);
-
-      const { header: redirect_header, body: redirect_body } = await tryRequest(redirect_host, redirect_route);
-
-      if (!redirect_header.statusCode.startsWith('2') || !redirect_header.statusCode.startsWith('3')) {
-        throw new Error('Redirect was not successfull');
-      }
-
-      if (header.statusCode === '301') {
-        permanentRedirect = {
-          host: redirect_host,
-          route: redirect_route,
-        };
-      }
-
-      header = redirect_header;
-      body = redirect_body;
-    }
-
-    if (!header.statusCode.startsWith('2') && !header.statusCode.startsWith('3')) {
+    if (!header.statusCode.startsWith('2')) {
       throw new Error(`Not successful status code ${header.statusCode}`);
     }
 
@@ -54,8 +29,9 @@ process.on('message', async(message) => {
 
     saveFile(`${message.host}${message.route}`, text);
 
-    process.send({ host: message.host, route: message.route, success: true, links: links, redirect: permanentRedirect });
+    process.send({ host: message.host, route: message.route, success: true, links: links });
   } catch (e) {
+    // console.log(e.message);
     process.send({ host: message.host, route: message.route, success: false });
   }
 });
@@ -63,11 +39,15 @@ process.on('message', async(message) => {
 /**
  * @argument {string} host
  * @argument {string} route
+ * @argument {number} [currentDepth=1]
  * @returns {{header: object, body: string}}
  * @async
  */
-async function tryRequest(host, route) {
+async function tryRequest(host, route, currentDepth = 1) {
   try {
+    if (currentDepth > 1) {
+      console.log('redirect ', currentDepth);
+    }
     const isRepAllowed = await (new RepHandler(UserAgent)
       .isEndpointAllowed(host, route));
 
@@ -78,6 +58,25 @@ async function tryRequest(host, route) {
 
     const { header, body } = await (new HttpClient(host, route)
       .get());
+
+    if (header.statusCode === '301' || header.statusCode === '302') {
+      if (currentDepth === 5) {
+        throw new Error('Max redirect depth reached', header.location);
+      }
+
+      if (header.location.startsWith('https')) {
+        throw new Error('Protocol https not supported');
+      }
+
+      // Manual redirects
+      if (header.location === 'http') {
+        throw new Error('Manual redirects not supported');
+      }
+
+      const { host: redirect_host, route: redirect_route } = createRedirectUrl(header.location, host, route);
+
+      const { header: redirect_header, body: redirect_body } = await tryRequest(redirect_host, redirect_route, currentDepth + 1);
+    }
 
     return { header: header, body: body };
   } catch (e) {
@@ -142,6 +141,6 @@ function saveFile(url, contents) {
 
     fs.writeFile(filePath, contents, () => {});
   } catch (ex) {
-    console.warn(ex.message);
+    console.error(ex.message);
   }
 }

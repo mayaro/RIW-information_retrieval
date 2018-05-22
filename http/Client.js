@@ -29,7 +29,7 @@ module.exports = exports = class HttpClient {
         setTimeout(() => {
           this.socket.destroy();
           return reject('Timeout');
-        }, 2000);
+        }, 5000);
 
         const cachedAddress = DnsCache.get(this.host);
         if (cachedAddress !== null) {
