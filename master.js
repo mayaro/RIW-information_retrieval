@@ -3,8 +3,8 @@ const { splitUrl } = require('./http/Parser');
 const { fork } = require('child_process');
 const os = require('os');
 
-const cpus = os.cpus().length - 1;
-// const cpus = 3;
+// const cpus = os.cpus().length - 1;
+const cpus = 4;
 
 const workers = [];
 const visited = {};
@@ -17,7 +17,7 @@ let prevTime = 0;
 // Initialize workers
 for (let i = 0; i < cpus; ++i) {
   const worker = fork('fetcher.js', [ i ], {
-    execArgv: [ `--inspect=${Math.floor(Math.random() * (65000 - 20000) + 20000)}` ],
+    // execArgv: [ `--inspect=${Math.floor(Math.random() * (65000 - 20000) + 20000)}` ],
   });
 
   worker.on('message', (message, handle) => {
@@ -53,9 +53,9 @@ function handleWorkerMessage(message, handle) {
   visited[host].add(route);
 
   if (redirect) {
-    queue[redirect.host] = queue[host];
+    queue[redirect] = queue[host];
     delete queue[host];
-    host = redirect.host;
+    host = redirect;
   }
 
   if (success === true && links instanceof Array) {
@@ -94,9 +94,9 @@ function handleWorkerMessage(message, handle) {
 function assignWorkerJobs(fromTimeout) {
   let job = null;
 
-  if (!workers.every((w) => w.activePages < 5)) {
-    return;
-  }
+  // if (!workers.every((w) => w.activePages < 5)) {
+  //   return;
+  // }
 
   if (workItemRequested === true && fromTimeout === true) {
     workItemRequested = false;
@@ -107,7 +107,7 @@ function assignWorkerJobs(fromTimeout) {
   for (let idx = 0; idx < sortedWorkers.length; idx++) {
     let worker = sortedWorkers[idx];
 
-    if (worker.activePages >= 10) {
+    if (worker.activePages >= 20) {
       continue;
     }
 
@@ -116,18 +116,18 @@ function assignWorkerJobs(fromTimeout) {
       return;
     }
 
-    console.log(`got work item ${job.host}${job.route} on index ${idx} for worker ${worker.pid}`);
+    // console.log(`got work item ${job.host}${job.route} on index ${idx} for worker ${worker.pid}`);
 
     // console.log(Date.now() - prevTime);
     // prevTime = Date.now();
     worker.activePages++;
     worker.send(job);
 
-    if (idx === sortedWorkers.length - 1 && sortedWorkers.some((w) => {
-      return w.activePages < 10;
-    })) {
-      idx = -1;
-    }
+    // if (idx === sortedWorkers.length - 1 && sortedWorkers.some((w) => {
+    //   return w.activePages < 10;
+    // })) {
+    //   idx = -1;
+    // }
   }
 }
 

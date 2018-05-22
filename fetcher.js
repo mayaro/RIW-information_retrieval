@@ -89,7 +89,11 @@ async function tryRequest(host, route, currentDepth = 1) {
       redirect.body = redirectBody;
     }
 
-    return { header, body, redirect };
+    if (currentDepth === 1 && header.statusCode === '301') {
+      return { header, body, redirect };
+    }
+
+    return { header, body };
   } catch (e) {
     throw e;
   }
