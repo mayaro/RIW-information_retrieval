@@ -13,7 +13,7 @@ process.on('message', async(message) => {
   let afterRequest = null;
 
   try {
-    let { header, body } = await tryRequest(message.host, message.route);
+    let { header, body, redirect } = await tryRequest(message.host, message.route);
     afterRequest = Date.now();
 
     // console.log(process.pid, message.host, message.route, header.statusCode);
@@ -22,16 +22,21 @@ process.on('message', async(message) => {
       throw new Error(`Not successful status code ${header.statusCode}`);
     }
 
-    const { text, links } = await extract(body, `http://${message.host}`);
+    let host = message.host;
+    if (redirect) {
+      host = redirect.host;
+    }
+
+    const { text, links } = await extract(body, `http://${host}`);
 
     const now = Date.now();
     // console.log(message.host, message.route, now - start, afterRequest - start, now - afterRequest);
 
-    saveFile(`${message.host}${message.route}`, text);
+    saveFile(`${host}${message.route}`, text);
 
-    process.send({ host: message.host, route: message.route, success: true, links: links });
+    process.send({ host, route: message.route, success: true, links: links, redirect: redirect ? redirect.host : undefined });
   } catch (e) {
-    // console.log(e.message);
+    console.log(e.message);
     process.send({ host: message.host, route: message.route, success: false });
   }
 });
@@ -59,6 +64,8 @@ async function tryRequest(host, route, currentDepth = 1) {
     const { header, body } = await (new HttpClient(host, route)
       .get());
 
+    let redirect = undefined;
+
     if (header.statusCode === '301' || header.statusCode === '302') {
       if (currentDepth === 5) {
         throw new Error('Max redirect depth reached', header.location);
@@ -73,12 +80,16 @@ async function tryRequest(host, route, currentDepth = 1) {
         throw new Error('Manual redirects not supported');
       }
 
-      const { host: redirect_host, route: redirect_route } = createRedirectUrl(header.location, host, route);
+      const { host: redirectHost, route: redirectRoute } = createRedirectUrl(header.location, host, route);
 
-      const { header: redirect_header, body: redirect_body } = await tryRequest(redirect_host, redirect_route, currentDepth + 1);
+      const { header: redirectHeader, body: redirectBody } = await tryRequest(redirectHost, redirectRoute, currentDepth + 1);
+
+      redirect = {};
+      redirect.header = redirectHeader;
+      redirect.body = redirectBody;
     }
 
-    return { header: header, body: body };
+    return { header, body, redirect };
   } catch (e) {
     throw e;
   }
