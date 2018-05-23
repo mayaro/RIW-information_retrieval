@@ -1,7 +1,16 @@
 const dgram = require('dgram');
 
 const DefaultPort = 53;
+
+/**
+ * First DNS server used, Google
+ */
 const DefaultNameserver = '8.8.8.8';
+
+/**
+ * Alternate RCS-RDS DNS server that's closer, and thus faster than Google
+ */
+// const DefaultNameserver = '81.180.222.254';
 
 /**
  * @typedef {object} DnsResponse
@@ -16,7 +25,6 @@ const DefaultNameserver = '8.8.8.8';
  * @property {number} class
  * @property {number} ttl
  */
-
 module.exports = exports = class Client {
   /**
    * @param {string} hostname
@@ -30,13 +38,17 @@ module.exports = exports = class Client {
     this.port = port;
     this.recursionDesired = recursionDesired === true ? 1 : 0;
 
-    // Comunication-related properties
+    /**
+     * Communication related properties
+     */
     this.call = null;
     this.response = null;
     this.error = null;
     this.socket = this.createSocket();
 
-    // Initialize comunication
+    /**
+     * Initialize communication by creating and sending the DNS question
+     */
     this.timestamp = Date.now();
     this.socket.send(
       this.createQuestion(),
@@ -64,7 +76,7 @@ module.exports = exports = class Client {
         return this.call.then(
           () => {
             return resolve(
-              getIpAddressesFromResponse(this.response)
+              getIpAddressesFromResponse.call(this, this.response)
             );
           },
           () => {
@@ -75,7 +87,7 @@ module.exports = exports = class Client {
 
       if (this.response !== null) {
         return resolve(
-          getIpAddressesFromResponse(this.response)
+          getIpAddressesFromResponse.call(this, this.response)
         );
       }
 
@@ -121,6 +133,10 @@ module.exports = exports = class Client {
     indexToRead = indexToRead + 2;
 
     response.answers = [];
+
+    /**
+     * Read and parse chunks for each response entry found
+     */
     const totalNumberOfAnswers = numberOfAdresses + numberOfAuthorities + numberOfAdditionalResponses;
     for (let answerIdx = 0; answerIdx < totalNumberOfAnswers; answerIdx++) {
       const answer = {
@@ -149,6 +165,9 @@ module.exports = exports = class Client {
 
       response.answers.push(answer);
 
+      /**
+       * IPv4 addresses
+       */
       if (answer.type === 1) {
         const addressArr = [];
 
@@ -163,6 +182,9 @@ module.exports = exports = class Client {
         continue;
       }
 
+      /**
+       * IPv6 addresses
+       */
       if (answer.type === 28) {
         const addressArr = [];
 
@@ -186,7 +208,7 @@ module.exports = exports = class Client {
   }
 
   /**
-   * Perse the response flags "object" and retrieve the most important flags.
+   * Parse the response flags "object" and retrieve the most important flags.
    *
    * @private
    * @param {number} flags
@@ -217,6 +239,10 @@ module.exports = exports = class Client {
     const socket = dgram.createSocket('udp4');
 
     this.call = new Promise((resolve, reject) => {
+      /**
+       * If an error occurs on the socket at any moment in time, log it,
+       * destroy the socket and return a reject message.
+       */
       socket.once('error', (err) => {
         console.error(err.message);
         this.error = err.message;
@@ -226,6 +252,9 @@ module.exports = exports = class Client {
         reject();
       });
 
+      /**
+       * Once a DNS message is received, parse it and return the results.
+       */
       socket.once('message', (message, info) => {
         this.response = this.parseDnsAnswer(message);
         socket.close();
@@ -251,10 +280,10 @@ module.exports = exports = class Client {
     let index = startingIndex;
 
     while (buffer.readUInt8(index) !== 0) {
-      const tagLength = buffer.readUInt8(index);
+      const tag = buffer.readUInt8(index);
 
-      // Specifies a address
-      if (tagLength >= 192) {
+      // Address pointer.
+      if (tag >= 192) {
         const pointerAddr = (buffer.readUInt16BE(index) & ~(1 << 15 | 1 << 14));
 
         this.parseChunkFromBuffer(buffer, pointerAddr, dest);
@@ -263,17 +292,17 @@ module.exports = exports = class Client {
         return index;
       }
 
-      const particle = buffer.slice(++index, index + tagLength).toString();
+      const particle = buffer.slice(++index, index + tag).toString();
 
       dest.push(particle);
-      index = index + tagLength;
+      index = index + tag;
     }
 
     return ++index;
   }
 
   /**
-   * Create a question for the current hostname, that will be sent to the authority.
+   * Create a question for the current hostname, that will be sent to the DNS server.
    * @private
    * @returns {Buffer}
    */
@@ -325,6 +354,7 @@ module.exports = exports = class Client {
 };
 
 /**
+ * Function that retrieves the IPv4 and IPv6 addresses from the DNS response buffer if there are any available.
  * @param {DnsResponse} response
  * @returns {string[]}
  */

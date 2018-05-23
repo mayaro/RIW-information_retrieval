@@ -13,8 +13,11 @@ module.exports = exports = class HttpClient {
     this.host = host;
     this.route = route;
     this.userAgent = userAgent;
+    this.port = 80;
 
-    // Comunication related variables
+    /**
+     * Create the TCP socket used for communications
+     */
     this.socket = new net.Socket();
   }
 
@@ -26,16 +29,24 @@ module.exports = exports = class HttpClient {
       let address = null;
 
       try {
+        /**
+         * Create the timeout callback.
+         * If 5000ms are passed, destroy the socket and reject the request.
+         */
         setTimeout(() => {
           this.socket.destroy();
           return reject('Timeout');
         }, 5000);
 
+        /**
+         * Try to retrieve the DNS record from cache.
+         * If it has not been explored yet, create a DNS client and retrieve the address (also add it to the cache).
+         */
         const cachedAddress = DnsCache.get(this.host);
         if (cachedAddress !== null) {
-          // console.log('Using cached address');
           address = cachedAddress;
-        } else {
+        }
+        else {
           const dnsResponse = await (new DnsClient(this.host, true)
             .getAddresses());
 
@@ -49,6 +60,9 @@ module.exports = exports = class HttpClient {
 
         let data = '';
 
+        /**
+         * Bind the TCP's socket 'connect', 'error', 'data' and 'end' events.
+         */
         this.socket.once('connect', () => {
           this.socket.write(this.createRequest());
         });
@@ -69,7 +83,11 @@ module.exports = exports = class HttpClient {
           return resolve(parseResponse(data));
         });
 
-        this.socket.connect(80, `${address}`);
+        /**
+         * Try to connect to the server. Once a connection is established the request will be sent
+         * from the handled event.
+         */
+        this.socket.connect(this.port, `${address}`);
       } catch (e) {
         return reject(e);
       }
@@ -77,6 +95,7 @@ module.exports = exports = class HttpClient {
   }
 
   /**
+   * Create the HTTP request body
    * @private
    * @returns {string}
    */
@@ -94,8 +113,9 @@ module.exports = exports = class HttpClient {
 
 /**
  * Split the response in header and body.
+ * Also parse the header and create a dictionary with it's entries.
  * @argument {string} response
- * @returns {{header: string, body: string}}
+ * @returns {{header: {statusCode: string}, body: string}}
  */
 function parseResponse(response) {
   const firstNewlineIndex = response.indexOf('\r\n\r\n') + 4;
@@ -121,7 +141,7 @@ function parseResponse(response) {
  * that were present in the response and, at all times, the status code of
  * the request (statusCode).
  * @param {string} header
- * @returns {{header: {statusCode: string}, body: string}}
+ * @returns {{header: {statusCode: string}}}
  */
 function parseHeader(header) {
   const headerObject = {};
