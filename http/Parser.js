@@ -15,6 +15,13 @@ module.exports = exports = {
     };
   },
 
+  /**
+   * Extract the links and and parse the text from the raw response body,
+   *
+   * @argument {string} content
+   * @argument {string} base
+   * @returns {Promise<{links: string[], text: string}>}
+   */
   extract: function extract(content, base) {
     const links = [];
     let text = '';
@@ -26,6 +33,10 @@ module.exports = exports = {
       const parser = new htmlparser.Parser({
 
         onopentag: (tagName, attributes) => {
+          /**
+           * On <a> tag, if not page anchor and is html file create a new URL
+           * that will be passed to the master process.
+           */
           if (tagName.toLowerCase() === 'a') {
             let href = attributes.href;
 
@@ -45,6 +56,9 @@ module.exports = exports = {
 
             links.push(url.toString());
           }
+          /**
+           * On <meta> tag check if REP rules are enforced and update noindex and nofollow flags accordingly.
+           */
           else if (tagName.toLowerCase() === 'meta') {
             if (!attributes.name || attributes.name.toLowerCase() !== 'robots') {
               return;
@@ -56,16 +70,21 @@ module.exports = exports = {
 
             nofollow = attributes.content.toLowerCase().includes('nofollow');
             noindex = attributes.content.toLowerCase().includes('noindex');
-
-            // console.log(attributes.content, nofollow, noindex);
           }
         },
 
         ontext: (_text) => {
+          /**
+           * When text is received, remove all empty spaces and append it to the already existing text.
+           */
           text = text + _text.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ');
         },
 
         onend: () => {
+          /**
+           * Once the DOM has been completely parsed return the text and links found
+           * depending to the noindex and nofollow REP rules.
+           */
           if (noindex === true || nofollow === true) {
             console.log(noindex, nofollow);
           }

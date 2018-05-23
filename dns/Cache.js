@@ -1,10 +1,14 @@
 const fs = require('fs');
 
 let DnsCache = null;
+/**
+ * On module load try to load the cache from file if it odes exist.
+ * Otherwise initialize the cache as an empty object.
+ */
 try {
   DnsCache = require('../cache.json');
 }
-catch (e) {
+catch () {
   DnsCache = {};
 }
 
@@ -39,12 +43,24 @@ module.exports = exports = {
    * @argument {number} ttl
    */
   put: function put(hostname, address, timestamp, ttl) {
+    /**
+     * Each entry in the DNS cache will be as key-value pair where
+     * the key is the hostname, lowercased, and the value is an object containing
+     * the address that was found, it's ttl and the timestamp
+     * when the DNS request was sent.
+     */
     DnsCache[hostname.toLowerCase()] = {
       address: address,
       timestamp: timestamp,
       ttl: ttl,
     };
 
-    fs.writeFile('./cache.json', JSON.stringify(DnsCache, null, 4), () => {});
+    /**
+     * Write he DNS cache object as a file to the disk.
+     */
+    fs.writeFile(
+      './cache.json',
+      JSON.stringify(DnsCache, null, 4), () => {}
+    );
   },
 };

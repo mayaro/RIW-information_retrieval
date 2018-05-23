@@ -1,20 +1,23 @@
-const HttpClient = require('./Client');
+/**
+ * Library 'robots' is used for easy parsing and checking of robots.txt file.
+ */
 const Robots = require('robots-parser');
+const HttpClient = require('./Client');
 
-let _instance = null;
+let instance = null;
 
 module.exports = exports = class RepHandler {
   /**
-   * Singleton class used for chacking whether crawling a endpoint is allowed for the given UserAgent.
+   * Singleton class used for checking whether crawling a endpoint is allowed for the given UserAgent.
    * Only keeps records for the current User Agent.
    * @argument {string} userAgent
    */
   constructor(userAgent) {
-    if (_instance !== null) {
-      return _instance;
+    if (instance !== null) {
+      return instance;
     }
 
-    assignInstance(this);
+    instance = this;
 
     this.userAgent = userAgent;
     this.domains = { };
@@ -27,6 +30,10 @@ module.exports = exports = class RepHandler {
    * @returns {boolean}
    */
   async isEndpointAllowed(host, route) {
+    /**
+     * If robots.txt file has already been retrieved for this domain
+     * only check if the given route is allowed.
+     */
     if (this.domains[host]) {
       // console.log('Using cached REP rules');
 
@@ -41,7 +48,10 @@ module.exports = exports = class RepHandler {
 
     let response = null;
 
-    // fetch the robots.txt file
+    /**
+     * Otherwise, create a httpclient for getting the file,
+     * and only after that fetch it and check if route is allowed.
+     */
     try {
       response = await new HttpClient(host, '/robots.txt').get();
 
@@ -61,12 +71,3 @@ module.exports = exports = class RepHandler {
     return true;
   }
 };
-
-/**
- * Assign the instance on a global parameter.
- * Only called on the first creation of the RepHandler class.
- * @param {RepHandler} instance
- */
-function assignInstance(instance) {
-  _instance = instance;
-}

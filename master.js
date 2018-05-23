@@ -3,6 +3,7 @@ const { splitUrl } = require('./http/Parser');
 const { fork } = require('child_process');
 const os = require('os');
 
+// The number of processes to work on (workers).
 // const cpus = os.cpus().length - 1;
 const cpus = 4;
 
@@ -12,13 +13,14 @@ const queue = initializeWorkQueue();
 
 let isAssigningJobs = false;
 let workItemRequested = false;
-let prevTime = 0;
 
-// Initialize workers
+/**
+ * Create the workers
+ * Assign message handlers to them
+ * and send the first work items.
+ */
 for (let i = 0; i < cpus; ++i) {
-  const worker = fork('fetcher.js', [ i ], {
-    // execArgv: [ `--inspect=${Math.floor(Math.random() * (65000 - 20000) + 20000)}` ],
-  });
+  const worker = fork('fetcher.js');
 
   worker.on('message', (message, handle) => {
     return handleWorkerMessage.call(worker, message, handle);
@@ -38,12 +40,14 @@ for (let i = 0; i < cpus; ++i) {
 }
 
 /**
- * Handle fetcher messaging
+ * Handle worker message
  * @param {any} message
  * @param {Socket} handle
  * @this ChildProcess
  */
 function handleWorkerMessage(message, handle) {
+  // The number of active pages that a worker is fetching at a given time
+  // Limited at 20, decrease when master receives amessage from that worker.
   this.activePages--;
   let { success, links, redirect, host, route } = message;
 
@@ -52,15 +56,22 @@ function handleWorkerMessage(message, handle) {
   }
   visited[host].add(route);
 
+  /**
+   * If the worker marked the domain as redirected,
+   * change the hostname in the work queue to the new one.
+   */
   if (redirect) {
     queue[redirect] = queue[host];
     delete queue[host];
     host = redirect;
   }
 
+  /**
+   * If the page has been completely crawled, add the links found to the jobs queue.
+   */
   if (success === true && links instanceof Array) {
     links.forEach((link) => {
-      const { linkHost, route } = splitUrl(link);
+      const { linkHost } = splitUrl(link);
 
       if (!queue[linkHost]) {
         queue[linkHost] = {
@@ -78,6 +89,7 @@ function handleWorkerMessage(message, handle) {
     });
   }
 
+  // On each worker message, ensure all workers have enough work to do
   if (isAssigningJobs === false) {
     isAssigningJobs = true;
     assignWorkerJobs();
@@ -93,10 +105,6 @@ function handleWorkerMessage(message, handle) {
  */
 function assignWorkerJobs(fromTimeout) {
   let job = null;
-
-  // if (!workers.every((w) => w.activePages < 5)) {
-  //   return;
-  // }
 
   if (workItemRequested === true && fromTimeout === true) {
     workItemRequested = false;
@@ -116,24 +124,16 @@ function assignWorkerJobs(fromTimeout) {
       return;
     }
 
-    // console.log(`got work item ${job.host}${job.route} on index ${idx} for worker ${worker.pid}`);
-
-    // console.log(Date.now() - prevTime);
-    // prevTime = Date.now();
     worker.activePages++;
     worker.send(job);
-
-    // if (idx === sortedWorkers.length - 1 && sortedWorkers.some((w) => {
-    //   return w.activePages < 10;
-    // })) {
-    //   idx = -1;
-    // }
   }
 }
 
 /**
  * Get a work item and mark the domain with the current timestamp for being polite
  * and not exceeding 1connection/sec/domain.
+ * If no work item can be received, reschedule a callback in the minimum remaining time
+ * to the first politely available domain.
  * @returns {{ host: string, route: string } | null}
  */
 function getWorkItem() {
@@ -160,8 +160,8 @@ function getWorkItem() {
       return isPolite;
     });
 
-  // console.log(availableDomains.length, politelyAvailableDomains.length);
-
+  // No work item available yet, schedule the assignworkeritems function to be recalled
+  // Once a work item becomes availabe.
   if (!politelyAvailableDomains.length) {
     if (workItemRequested === false) {
       workItemRequested = true;
