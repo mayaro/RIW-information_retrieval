@@ -5,6 +5,7 @@
     "name": "Muraru Ștefan",
     "email": "muraru.stefaan@gmail.com"
   },
+  "license": "ISC",
   "dependencies": {
     "htmlparser2": "^3.9.2",
     "robots-parser": "^2.1.0",
