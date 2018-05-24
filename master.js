@@ -71,7 +71,7 @@ function handleWorkerMessage(message, handle) {
    */
   if (success === true && links instanceof Array) {
     links.forEach((link) => {
-      const { linkHost } = splitUrl(link);
+      const { linkHost, route: urlRoute } = splitUrl(link);
 
       if (!queue[linkHost]) {
         queue[linkHost] = {
@@ -80,12 +80,12 @@ function handleWorkerMessage(message, handle) {
         };
       }
 
-      const newRoute = queue[linkHost].prefix ? queue[linkHost].prefix + route : route;
+      const newRoute = queue[linkHost].prefix ? queue[linkHost].prefix + urlRoute : urlRoute;
       if (visited[linkHost] && visited[linkHost].has(newRoute)) {
         return null;
       }
 
-      return queue[linkHost].routes.add(route);
+      return queue[linkHost].routes.add(urlRoute);
     });
   }
 

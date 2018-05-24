@@ -8,7 +8,7 @@ let DnsCache = null;
 try {
   DnsCache = require('../cache.json');
 }
-catch () {
+catch (e) {
   DnsCache = {};
 }
 
