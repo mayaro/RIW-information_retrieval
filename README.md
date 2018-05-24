@@ -20,3 +20,7 @@
 `
 https://github.com/mayaro/RIW-information_retrieval
 `
+
+### AUTO-EVALUATION: See EVALUATION.md file
+
+#### Samples for a 6-second run can be found in `./samples/` directory.

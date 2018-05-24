@@ -1,0 +1,117 @@
+{
+    "www.python.org": {
+        "address": "151.101.0.223",
+        "timestamp": 1527149547291,
+        "ttl": 29
+    },
+    "riweb.tibeica.com": {
+        "address": "67.207.88.228",
+        "timestamp": 1527149547905,
+        "ttl": 1328
+    },
+    "www.apache.org": {
+        "address": "40.79.78.1",
+        "timestamp": 1527149548189,
+        "ttl": 253
+    },
+    "cwiki.apache.org": {
+        "address": "209.188.14.145",
+        "timestamp": 1527149548191,
+        "ttl": 1026
+    },
+    "mail-archives.apache.org": {
+        "address": "207.244.88.142",
+        "timestamp": 1527149548226,
+        "ttl": 1425
+    },
+    "ostatic.com": {
+        "address": "52.85.177.220",
+        "timestamp": 1527149548351,
+        "ttl": 59
+    },
+    "google.com": {
+        "address": "216.58.209.174",
+        "timestamp": 1527149548548,
+        "ttl": 254
+    },
+    "www.youtube.com": {
+        "address": "216.58.209.174",
+        "timestamp": 1527149548644,
+        "ttl": 299
+    },
+    "planet.apache.org": {
+        "address": "88.99.81.31",
+        "timestamp": 1527149548647,
+        "ttl": 1428
+    },
+    "smile.amazon.com": {
+        "address": "54.239.26.123",
+        "timestamp": 1527149548700,
+        "ttl": 51
+    },
+    "www.donateacar.com": {
+        "address": "52.33.107.215",
+        "timestamp": 1527149548721,
+        "ttl": 59
+    },
+    "wiki.apache.org": {
+        "address": "163.172.69.106",
+        "timestamp": 1527149548829,
+        "ttl": 1160
+    },
+    "haecceity.clearairturbulence.org": {
+        "address": "80.87.131.51",
+        "timestamp": 1527149548863,
+        "ttl": 10330
+    },
+    "tomcat.apache.org": {
+        "address": "40.79.78.1",
+        "timestamp": 1527149548907,
+        "ttl": 905
+    },
+    "httpd.apache.org": {
+        "address": "195.154.151.36",
+        "timestamp": 1527149549162,
+        "ttl": 1665
+    },
+    "docs.trafficserver.apache.org": {
+        "address": "104.239.143.16",
+        "timestamp": 1527149549197,
+        "ttl": 1799
+    },
+    "freenode.net": {
+        "address": "104.25.60.112",
+        "timestamp": 1527149549229,
+        "ttl": 299
+    },
+    "jigsaw.w3.org": {
+        "address": "128.30.52.21",
+        "timestamp": 1527149549360,
+        "ttl": 522
+    },
+    "apache.org": {
+        "address": "195.154.151.36",
+        "timestamp": 1527149549370,
+        "ttl": 131
+    },
+    "apachecon.com": {
+        "address": "40.79.78.1",
+        "timestamp": 1527149549603,
+        "ttl": 1799
+    },
+    "helpwanted.apache.org": {
+        "address": "207.244.88.147",
+        "timestamp": 1527149549647,
+        "ttl": 1478
+    },
+    "incubator.apache.org": {
+        "address": "40.79.78.1",
+        "timestamp": 1527149549722,
+        "ttl": 1190
+    },
+    "www.flickr.com": {
+        "address": "87.248.116.11",
+        "timestamp": 1527149549758,
+        "ttl": 24
+    }
+}
