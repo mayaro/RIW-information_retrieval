@@ -15,3 +15,8 @@
  - Run `npm install` to install all node modules required
  - Modify the save path in `./fetcher.js`
  - Optionally, modify the number of fetchers to work with inside `./master.js`
+
+### GIT Repository:
+`
+https://github.com/mayaro/RIW-information_retrieval
+`
